@@ -1,3 +1,4 @@
+from __future__ import division
 import os.path
 
 from numpy import *
@@ -8,6 +9,7 @@ from .. import cumsum0
 from ..analysis import hilbert
 from ..chunk import chunkify, dechunkify
 from ..window import pad, cosine
+from ..filter import Polezero
 
 sample_rate, data = wavfile.read(os.path.join(DATA_PATH, "whistle.wav"))
 data = data.astype(float) / 2.0 ** 15
@@ -22,7 +24,15 @@ phase = unwrap(angle(data))
 frequency = diff(phase)
 amplitude = abs(data)
 
-vibrato = 1 + 0.03 * sin(linspace(0, 200, len(frequency)))
+polezero = Polezero()
+polezero.a1 = -1
+polezero.b0 = 0.01
+polezero.a0 = polezero.b0 - polezero.a1
+polezero.b1 = 0
+frequency = array(polezero.map(frequency))
+amplitude = maximum(0, array(polezero.map(amplitude)) - 0.01)
+
+vibrato = 1 + 0.02 * sin(linspace(0, 200, len(frequency)))
 
 phase = cumsum0(frequency * vibrato * 0.5)
 data = 2 * sin(phase + sin(5 * phase) * amplitude) * amplitude
