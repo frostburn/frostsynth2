@@ -5,25 +5,14 @@ from numpy import *
 from scipy.io import wavfile
 
 from . import DATA_PATH
-from .. import cumsum0
-from ..analysis import hilbert
-from ..chunk import chunkify, dechunkify
-from ..window import pad, cosine
+from ..process import decompose_frequency
 from ..filter import Polezero
-from ..waveform import sine, softsaw, tau
+from ..waveform import sine, softsaw
 from ..sampling import read_and_set_sample_rate, write
 
 data = read_and_set_sample_rate(os.path.join(DATA_PATH, "ocarina.wav"))
 
-chunks = chunkify(data, window=pad(cosine(1024), 512), overlap=4)
-
-chunks = map(hilbert, chunks)
-
-data = 2 * dechunkify(chunks, overlap=4)
-
-phase = unwrap(angle(data)) / tau
-frequency = diff(phase)
-amplitude = abs(data)
+frequency, amplitude = decompose_frequency(data)
 
 polezero = Polezero()
 polezero.a1 = -1
@@ -40,7 +29,7 @@ polezero.b1 = 0
 amplitude = maximum(0, array(polezero.map(amplitude)) - 0.01)
 amplitude = concatenate((amplitude[:-1000], zeros(1000)))
 
-phase = cumsum0(frequency)
+phase = cumsum(frequency)
 
 amplitude /= amplitude.max()
 data = softsaw(phase * 0.25 + 0.06 * sine(phase * 1.75), cbrt(amplitude) * 0.96) * amplitude

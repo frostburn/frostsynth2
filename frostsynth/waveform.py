@@ -1,7 +1,8 @@
 import numpy as np
 
+from . import tau
+
 EPSILON = 1e-12
-tau = 2 * np.pi
 
 
 def sine(phase):
