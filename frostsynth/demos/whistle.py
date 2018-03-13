@@ -8,7 +8,7 @@ from . import DATA_PATH
 from .. import tau
 from ..process import decompose_frequency, clean_frequency
 from ..filter import Polezero
-from ..sampling import time_like, read_and_set_sample_rate, shift, write
+from ..sampling import time_like, read_and_set_sample_rate, write, integrate
 
 data = read_and_set_sample_rate(os.path.join(DATA_PATH, "whistle.wav"))
 
@@ -17,7 +17,7 @@ frequency, amplitude = clean_frequency(frequency, amplitude)
 
 vibrato = 1 + 0.02 * sin(time_like(frequency) * 5)
 
-phase = cumsum(frequency * vibrato * 0.5) * tau
+phase = integrate(frequency * vibrato * 0.5) * tau
 data = sin(phase + sin(5 * phase) * amplitude) * amplitude
 
 filename = raw_input("Enter (WAV) output filename: ")

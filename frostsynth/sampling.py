@@ -28,7 +28,9 @@ def set_sample_rate(rate):
     SAMPLE_RATE = rate
 
 
-def get_sample_rate():
+def get_sample_rate(default=None):
+    if SAMPLE_RATE is None:
+        return default
     return SAMPLE_RATE
 
 
@@ -36,7 +38,10 @@ def read_and_set_sample_rate(filename):
     rate, data = wavfile.read(filename)
     set_sample_rate(rate)
     info = np.iinfo(data.dtype)
-    return data.astype(float) / max(abs(info.min), abs(info.max))
+    data = data.astype(float) / max(abs(info.min), abs(info.max))
+    if len(data.shape) > 1 and data.shape[0] > data.shape[1]:
+        return data.T
+    return data
 
 
 @sampled
@@ -58,3 +63,13 @@ def shift(samples, duration, interpolation=None):
         return np.concatenate((np.zeros(duration), samples[duration:]))
     else:
         return np.concatenate((samples[:duration], np.zeros(-duration)))
+
+
+@sampled
+def differentiate(samples):
+    return np.concatenate(([0], np.diff(samples) * SAMPLE_RATE))
+
+
+@sampled
+def integrate(samples):
+    return np.cumsum(samples / SAMPLE_RATE)

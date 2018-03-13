@@ -8,7 +8,7 @@ from . import DATA_PATH
 from ..process import decompose_frequency
 from ..filter import Polezero
 from ..waveform import sine, softsaw
-from ..sampling import read_and_set_sample_rate, write
+from ..sampling import read_and_set_sample_rate, write, integrate
 
 data = read_and_set_sample_rate(os.path.join(DATA_PATH, "ocarina.wav"))
 
@@ -29,7 +29,7 @@ polezero.b1 = 0
 amplitude = maximum(0, array(polezero.map(amplitude)) - 0.01)
 amplitude = concatenate((amplitude[:-1000], zeros(1000)))
 
-phase = cumsum(frequency)
+phase = integrate(frequency)
 
 amplitude /= amplitude.max()
 data = softsaw(phase * 0.25 + 0.06 * sine(phase * 1.75), cbrt(amplitude) * 0.96) * amplitude
