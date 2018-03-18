@@ -87,3 +87,25 @@ def differentiate(samples):
 @sampled
 def integrate(samples):
     return np.cumsum(samples / SAMPLE_RATE)
+
+
+def amerge(args):
+    length = 0
+    for x, values in args:
+        length = max(length, x + len(values))
+    result = np.zeros(length)
+    for x, values in args:
+        result += np.concatenate((
+            np.zeros(x),
+            values,
+            np.zeros(length - x - len(values))
+        ))
+    return result
+
+
+@sampled
+def merge(args):
+    for i in range(len(args)):
+        x, values = args[i]
+        args[i] = (int(round(x * SAMPLE_RATE)), values)
+    return amerge(args)
