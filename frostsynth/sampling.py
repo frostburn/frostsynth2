@@ -52,6 +52,20 @@ def write(filename, data):
 
 
 @sampled
+def trange(a, b=None):
+    if b is None:
+        start = 0
+        end = a
+    else:
+        start = a
+        end = b
+    return np.arange(
+        int(round(start * SAMPLE_RATE)),
+        int(round(end * SAMPLE_RATE))
+    ) / SAMPLE_RATE
+
+
+@sampled
 def time_like(a):
     return np.arange(len(a)) / SAMPLE_RATE
 
