@@ -1,10 +1,12 @@
 from numpy import concatenate, zeros
 
 
-def chunkify(data, window, overlap):
+def chunkify(data, window, overlap, ljust=False):
     size = len(window)
     delta = size // overlap
     chunks = []
+    if ljust:
+        data = concatenate((zeros(delta), data))
     if len(data) % size != 0:
         data = concatenate((data, zeros(size - len(data) % size)))
     while len(data) >= size:
@@ -18,7 +20,11 @@ def dechunkify(chunks, overlap):
     delta = size // overlap
     components = []
     for i in range(overlap):
-        component = concatenate(chunks[i::overlap])
+        parts = chunks[i::overlap]
+        if parts:
+            component = concatenate(parts)
+        else:
+            component = zeros(0)
         component = concatenate((zeros(delta * i), component))
         components.append(component)
     max_len = max(map(len, components))
