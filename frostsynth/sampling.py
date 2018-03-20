@@ -105,6 +105,7 @@ def amerge(args):
 
 @sampled
 def merge(args):
+    args = args[:]
     for i in range(len(args)):
         x, values = args[i]
         args[i] = (int(round(x * SAMPLE_RATE)), values)

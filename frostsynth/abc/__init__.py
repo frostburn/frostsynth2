@@ -7,11 +7,24 @@ from ..note import Note
 
 
 HEADER_SPECS = [
-    ("UNIT_LENGTH", r'\s*L:(\d+(/\d+)?)\n'),
-    ("TEMPO", r'\s*Q:(\d+(/\d+)?)=(\d+)\n'),
-    ("KEY", r'\s*K:([A-G](#|b)?m?)\n'),
-    ("ID", r'\s*X:\d+'),
+    ("UNIT_LENGTH", r'\s*L: *(\d+(/\d+)?)\n'),
+    ("TEMPO", r'\s*Q: *((\d+(/\d+)?)=)?(\d+)\n'),
+    ("KEY", r'\s*K: *([A-G](#|b)?m?)\n'),
+    ("ID", r'\s*X: *\d+'),
     ("TITLE", r'\s*T:.*\n'),
+    ("NOTES", r'\s*N:.*\n'),
+    ("PARTS", r'\s*P:.*\n'),
+    ("INSTRUCTION", r'\s*I:.*\n'),
+    ("TRANSCRIPTION", r'\s*Z:.*\n'),
+    ("AREA", r'\s*A:.*\n'),
+    ("ORIGIN", r'\s*O:.*\n'),
+    ("RYTHM", r'\s*R:.*\n'),
+    ("BOOK", r'\s*B:.*\n'),
+    ("DISCOGRAPHY", r'\s*D:.*\n'),
+    ("HISTORY", r'\s*H:.*\n'),
+    ("FILE", r'\s*F:.*\n'),
+    ("SOURCE", r'\s*S:.*\n'),
+    ("GROUP", r'\s*G:.*\n'),
     ("METER", r'\s*M:.*\n'),
     ("COMPOSER", r'\s*C:.*\n'),
     ("NEWLINE", r'\s*\n'),
@@ -21,12 +34,15 @@ HEADER_SPECS = [
 
 NOTE_SPECS = [
     ("NOTE", r'(|\^|_|=)([A-Ga-g]|z)'),
+    ("GROUP", r'\[.*?\]'),
+    ("CHORD_SYMBOL", r'".*?"'),
     ("DURATION", r'\d+'),
     ("INVERT_DURATION", r'/'),
     ("OCTAVE_UP", r"'"),
     ("OCTAVE_DOWN", r','),
     ("MISMATCH", r'.'),
 ]
+
 
 HEADER_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in HEADER_SPECS)
 NOTE_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in NOTE_SPECS)
@@ -42,11 +58,11 @@ def score_to_notes(score, as_floats=True):
         if kind == "UNIT_LENGTH":
             unit_length = Fraction(mo.groups()[1])
         elif kind == "TEMPO":
-            unit = mo.groups()[4]
-            bpm = mo.groups()[6]
+            unit = mo.groups()[4] or "1/4"
+            bpm = mo.groups()[7]
             tempo_multiplier = Fraction(60, int(bpm)) / Fraction(unit)
         elif kind == "KEY":
-            key = mo.groups()[8]
+            key = mo.groups()[9]
             if key not in PITCHES.keys():
                 raise NotImplementedError("Key signature {} not implemented yet".format(key))
         elif kind == "BODY":
