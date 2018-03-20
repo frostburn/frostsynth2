@@ -24,7 +24,7 @@ class Bar(object):
 HEADER_SPECS = [
     ("UNIT_LENGTH", r'\s*L: *(\d+(/\d+)?)\n'),
     ("TEMPO", r'\s*Q: *((\d+(/\d+)?)=)?(\d+)\n'),
-    ("KEY", r'\s*K: *([A-G](#|b)?m?)\n'),
+    ("KEY", r'\s*K: *([A-G](#|b)?.*)\n'),
     ("ID", r'\s*X: *\d+'),
     ("TITLE", r'\s*T:.*\n'),
     ("NOTES", r'\s*N:.*\n'),
@@ -50,14 +50,16 @@ HEADER_SPECS = [
 NOTE_SPECS = [
     ("NOTE", r'(|\^|_|=)([A-Ga-g]|z)'),
     ("GROUP", r'\[([A-Ga-d]|\d+)*?\]'),
-    ("THIN_THICK_BAR", r'\|\]'),
-    ("THIN_THIN_BAR", r'\|\|'),
-    ("THICK_THIN_BAR", r'\[\|'),
     ("START_REPEAT", r'\|:'),
     ("END_REPEAT", r':\|'),
     ("START_END_REPEAT", r'\::'),
     ("FIRST_REPEAT", r'\[1'),
     ("SECOND_REPEAT", r'\[2'),
+    ("THICK_FIRST_REPEAT", r'\|\[1'),
+    ("THICK_SECOND_REPEAT", r'\|\[2'),
+    ("THIN_THICK_BAR", r'\|\]'),
+    ("THIN_THIN_BAR", r'\|\|'),
+    ("THICK_THIN_BAR", r'\[\|'),
     ("BAR", r'\|'),
     ("CHORD_SYMBOL", r'".*?"'),
     ("DURATION", r'\d+'),
@@ -68,7 +70,19 @@ NOTE_SPECS = [
 ]
 
 
-BARS = ("BAR", "THICK_THIN_BAR", "THIN_THIN_BAR", "THIN_THICK_BAR", "START_REPEAT", "END_REPEAT", "START_END_REPEAT")
+BARS = set([
+    "START_REPEAT",
+    "END_REPEAT",
+    "START_END_REPEAT",
+    "FIRST_REPEAT",
+    "SECOND_REPEAT",
+    "THICK_FIRST_REPEAT",
+    "THICK_SECOND_REPEAT",
+    "THICK_THIN_BAR",
+    "THIN_THIN_BAR",
+    "THIN_THICK_BAR",
+    "BAR",
+])
 
 
 HEADER_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in HEADER_SPECS)
@@ -121,15 +135,20 @@ def unravel_bars(elements):
         if bar.kind in ("END_REPEAT", "START_END_REPEAT"):
             repeat_start = max([b for b in repeat_starts if b < bar]).time
             repeat_end = bar.time
-            duration = repeat_end - repeat_start
             bar.kind = "THIN_THIN_BAR"
+
+            first_repeat = repeat_end
+            for b in bars:
+                if b.kind in ("FIRST_REPEAT", "THICK_FIRST_REPEAT") and repeat_start <= b.time < repeat_end:
+                    first_repeat = b.time
+
             for element in elements[:]:
-                if repeat_start <= element.time < repeat_end:
+                if repeat_start <= element.time < first_repeat:
                     clone = element.copy()
-                    clone.time += duration
+                    clone.time += repeat_end - repeat_start
                     elements.append(clone)
                 elif element.time >= repeat_end:
-                    element.time += duration
+                    element.time += first_repeat - repeat_start
             return unravel_bars(elements)
 
     return [e for e in elements if isinstance(e, Note)]
@@ -138,7 +157,7 @@ def unravel_bars(elements):
 def score_body_to_elements(score, pitches):
     time = Fraction(0)
     current_note = None
-    current_bar = None
+    current_bars = []
     duration_inverted = False
 
     class Sentinel(object):
@@ -159,11 +178,11 @@ def score_body_to_elements(score, pitches):
                     yield current_note
             current_note = Note(pitches[value], Fraction(1), time)
 
-            if current_bar is not None:
-                current_bar.time = time
-                yield current_bar
+            for bar in current_bars:
+                bar.time = time
+                yield bar
 
-            current_bar = None
+            current_bars = []
             duration_inverted = False
         elif kind == "DURATION":
             value = int(value)
@@ -179,4 +198,4 @@ def score_body_to_elements(score, pitches):
         elif kind == "OCTAVE_DOWN":
             current_note.pitch -= 12
         elif kind in BARS:
-            current_bar = Bar(kind)
+            current_bars.append(Bar(kind))

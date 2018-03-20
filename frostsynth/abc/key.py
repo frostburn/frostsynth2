@@ -43,11 +43,11 @@ PITCHES = {
         "B": 71,
     },
     "D": {
-        "C": 60,
+        "C": 61,
         "D": 62,
         "E": 64,
         "F": 66,
-        "G": 68,
+        "G": 67,
         "A": 69,
         "B": 71,
     },
@@ -82,7 +82,12 @@ for pitches in PITCHES.values():
 
 
 PITCHES["Am"] = PITCHES["C"]
+PITCHES["AMin"] = PITCHES["C"]
 PITCHES["Em"] = PITCHES["G"]
+PITCHES["EMin"] = PITCHES["G"]
 PITCHES["Bm"] = PITCHES["D"]
+PITCHES["BMin"] = PITCHES["D"]
 PITCHES["Dm"] = PITCHES["F"]
+PITCHES["DMin"] = PITCHES["F"]
 PITCHES["Gm"] = PITCHES["Bb"]
+PITCHES["GMin"] = PITCHES["Bb"]
