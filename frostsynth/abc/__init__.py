@@ -1,6 +1,7 @@
 from fractions import Fraction
 import re
 
+from .key import PITCHES
 from ..note import Note
 
 
@@ -27,44 +28,6 @@ NOTE_SPECS = [
     ("MISMATCH", r'.'),
 ]
 
-
-PITCHES_C = {
-    "_C": 59,
-    "C": 60,
-    "=C": 60,
-    "^C": 61,
-    "_D": 61,
-    "D": 62,
-    "=D": 62,
-    "^D": 63,
-    "_E": 63,
-    "E": 64,
-    "=E": 64,
-    "^E": 65,
-    "_F": 64,
-    "F": 65,
-    "=F": 65,
-    "^F": 66,
-    "_G": 66,
-    "G": 67,
-    "=G": 67,
-    "^G": 68,
-    "_A": 68,
-    "A": 69,
-    "=A": 69,
-    "^A": 70,
-    "_B": 70,
-    "B": 71,
-    "=B": 71,
-    "^B": 72,
-}
-
-for note, pitch in PITCHES_C.items():
-    PITCHES_C[note.lower()] = pitch + 12
-
-PITCHES_C["z"] = None
-
-
 HEADER_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in HEADER_SPECS)
 NOTE_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in NOTE_SPECS)
 
@@ -81,13 +44,13 @@ def score_to_notes(score, as_floats=True):
         elif kind == "TEMPO":
             unit = mo.groups()[4]
             bpm = mo.groups()[6]
-            tempo_multiplier = Fraction(int(bpm), 60) * Fraction(unit)
+            tempo_multiplier = Fraction(60, int(bpm)) / Fraction(unit)
         elif kind == "KEY":
             key = mo.groups()[8]
-            if key not in ("C", "Am"):
-                raise NotImplementedError("Key signatures not implemented")
+            if key not in PITCHES.keys():
+                raise NotImplementedError("Key signature {} not implemented yet".format(key))
         elif kind == "BODY":
-            pitches = PITCHES_C
+            pitches = PITCHES[key]
             tempo_multiplier *= unit_length
             for note in score_body_to_notes(score[mo.start():], pitches, as_floats):
                 note.duration *= tempo_multiplier
