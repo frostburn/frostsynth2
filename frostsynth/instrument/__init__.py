@@ -55,7 +55,7 @@ class SawBass(Instrument):
         dur = note.duration + 1
         t = trange(dur)
         p = note.get_phase(dur)
-        s = np.exp(-t * self.sharpness_decay.value) * np.sqrt(self.sharpness.value)
+        s = np.exp(-t * self.sharpness_decay.value) * np.cbrt(self.sharpness.value)
         separation = 0.2
 
         voice = softsaw(p + separation * t, s) + softsaw(p - separation * t, s)
