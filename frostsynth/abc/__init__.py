@@ -1,9 +1,24 @@
+import itertools
 from fractions import Fraction
 import re
 
 from .key import PITCHES
 from ..note import Note
 
+
+class Bar(object):
+    def __init__(self, kind, time=None):
+        self.kind = kind
+        self.time = time
+
+    def __repr__(self):
+        return "{}({!r}, {!r})".format(self.__class__.__name__, self.kind, self.time)
+
+    def __lt__(self, other):
+        return self.time < other.time
+
+    def copy(self):
+        return self.__class__(self.kind, self.time)
 
 
 HEADER_SPECS = [
@@ -34,7 +49,16 @@ HEADER_SPECS = [
 
 NOTE_SPECS = [
     ("NOTE", r'(|\^|_|=)([A-Ga-g]|z)'),
-    ("GROUP", r'\[.*?\]'),
+    ("GROUP", r'\[([A-Ga-d]|\d+)*?\]'),
+    ("THIN_THICK_BAR", r'\|\]'),
+    ("THIN_THIN_BAR", r'\|\|'),
+    ("THICK_THIN_BAR", r'\[\|'),
+    ("START_REPEAT", r'\|:'),
+    ("END_REPEAT", r':\|'),
+    ("START_END_REPEAT", r'\::'),
+    ("FIRST_REPEAT", r'\[1'),
+    ("SECOND_REPEAT", r'\[2'),
+    ("BAR", r'\|'),
     ("CHORD_SYMBOL", r'".*?"'),
     ("DURATION", r'\d+'),
     ("INVERT_DURATION", r'/'),
@@ -42,6 +66,9 @@ NOTE_SPECS = [
     ("OCTAVE_DOWN", r','),
     ("MISMATCH", r'.'),
 ]
+
+
+BARS = ("BAR", "THICK_THIN_BAR", "THIN_THIN_BAR", "THIN_THICK_BAR", "START_REPEAT", "END_REPEAT", "START_END_REPEAT")
 
 
 HEADER_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in HEADER_SPECS)
@@ -58,7 +85,7 @@ def score_to_notes(score, as_floats=True):
         if kind == "UNIT_LENGTH":
             unit_length = Fraction(mo.groups()[1])
         elif kind == "TEMPO":
-            unit = mo.groups()[4] or "1/4"
+            unit = mo.groups()[5] or "1/4"
             bpm = mo.groups()[7]
             tempo_multiplier = Fraction(60, int(bpm)) / Fraction(unit)
         elif kind == "KEY":
@@ -76,17 +103,51 @@ def score_to_notes(score, as_floats=True):
 
 
 def score_body_to_notes(score, pitches, as_floats=True):
-    if as_floats:
-        for note in score_body_to_notes(score, pitches, as_floats=False):
+    elements = list(score_body_to_elements(score, pitches))
+    for note in unravel_bars(elements):
+        if as_floats:
             note.duration = float(note.duration)
             note.time = float(note.time)
-            yield note
-        return
-    notes = []
+        yield note
+
+
+def unravel_bars(elements):
+    bars = [e for e in elements if isinstance(e, Bar)]
+    repeat_starts = [Bar("START", 0)]
+    for bar in bars:
+        if bar.kind in ("THICK_THIN_BAR", "THIN_THIN_BAR", "THIN_THICK_BAR", "START_REPEAT", "END_REPEAT", "START_END_REPEAT"):
+            repeat_starts.append(bar)
+    for bar in bars:
+        if bar.kind in ("END_REPEAT", "START_END_REPEAT"):
+            repeat_start = max([b for b in repeat_starts if b < bar]).time
+            repeat_end = bar.time
+            duration = repeat_end - repeat_start
+            bar.kind = "THIN_THIN_BAR"
+            for element in elements[:]:
+                if repeat_start <= element.time < repeat_end:
+                    clone = element.copy()
+                    clone.time += duration
+                    elements.append(clone)
+                elif element.time >= repeat_end:
+                    element.time += duration
+            return unravel_bars(elements)
+
+    return [e for e in elements if isinstance(e, Note)]
+
+
+def score_body_to_elements(score, pitches):
     time = Fraction(0)
     current_note = None
+    current_bar = None
     duration_inverted = False
-    for mo in re.finditer(NOTE_REGEX, score):
+
+    class Sentinel(object):
+        lastgroup = "NOTE"
+        @classmethod
+        def group(cls, kind):
+            return "z"
+
+    for mo in itertools.chain(re.finditer(NOTE_REGEX, score), [Sentinel]):
         kind = mo.lastgroup
         value = mo.group(kind)
         if kind == "NOTE":
@@ -97,6 +158,12 @@ def score_body_to_notes(score, pitches, as_floats=True):
                 if current_note.pitch is not None:
                     yield current_note
             current_note = Note(pitches[value], Fraction(1), time)
+
+            if current_bar is not None:
+                current_bar.time = time
+                yield current_bar
+
+            current_bar = None
             duration_inverted = False
         elif kind == "DURATION":
             value = int(value)
@@ -111,10 +178,5 @@ def score_body_to_notes(score, pitches, as_floats=True):
             current_note.pitch += 12
         elif kind == "OCTAVE_DOWN":
             current_note.pitch -= 12
-
-    if current_note is not None:
-        if duration_inverted:
-            current_note.duration /= 2
-        time += current_note.duration
-        if current_note.pitch is not None:
-            yield current_note
+        elif kind in BARS:
+            current_bar = Bar(kind)

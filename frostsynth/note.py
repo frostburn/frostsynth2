@@ -3,7 +3,7 @@ from .sampling import sampled, trange
 
 
 class Note(object):
-    def __init__(self, pitch, duration, time=None, velocity=0.5):
+    def __init__(self, pitch, duration, time=None, velocity=0.75):
         self.pitch = pitch
         self.duration = duration
         self.time = time
@@ -13,11 +13,12 @@ class Note(object):
         return hash((self.pitch, self.duration, self.time, self.velocity))
 
     def __repr__(self):
-        return "{}({!r}, {!r}, {!r})".format(
+        return "{}({!r}, {!r}, {!r}, {!r})".format(
             self.__class__.__name__,
             self.pitch,
             self.duration,
-            self.time
+            self.time,
+            self.velocity,
         )
 
     def __eq__(self, other):
@@ -38,3 +39,6 @@ class Note(object):
     @sampled
     def get_phase(self, duration):
         return trange(duration) * self.freq
+
+    def copy(self):
+        return self.__class__(self.pitch, self.duration, self.time, self.velocity)

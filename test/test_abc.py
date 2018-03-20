@@ -46,3 +46,30 @@ def test_key_signature():
             Note(67, Fraction(1, 1), Fraction(5, 1)),
         ])
     )
+
+
+def test_repeat():
+    score = """
+    X:3
+    T:Unit test in G minor
+    Q:1/4=60
+    L:1/4
+    M:3/4
+    K:Gm
+    A B C :| D E F |]
+    """
+    notes = set(abc.score_to_notes(score, as_floats=False))
+    assert (
+        notes ==
+        set([
+            Note(69, Fraction(1, 1), Fraction(0, 1)),
+            Note(70, Fraction(1, 1), Fraction(1, 1)),
+            Note(60, Fraction(1, 1), Fraction(2, 1)),
+            Note(69, Fraction(1, 1), Fraction(3, 1)),
+            Note(70, Fraction(1, 1), Fraction(4, 1)),
+            Note(60, Fraction(1, 1), Fraction(5, 1)),
+            Note(62, Fraction(1, 1), Fraction(6, 1)),
+            Note(63, Fraction(1, 1), Fraction(7, 1)),
+            Note(65, Fraction(1, 1), Fraction(8, 1)),
+        ])
+    )
