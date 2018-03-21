@@ -1,8 +1,7 @@
 import numpy as np
 import ipywidgets as widgets
 
-from .. import sampling
-from . import audio
+from .. import note
 
 
 class ToggleGrid(object):
@@ -47,27 +46,22 @@ class ToggleGrid(object):
         return self.el._ipython_display_()
 
 
-class InstrumentGrid(ToggleGrid):
-    def __init__(self, num_columns, beat_duration, instrument, scale):
+class NoteGrid(ToggleGrid):
+    def __init__(self, num_columns, beat_duration, scale):
         self.scale = scale
         self.beat_duration = beat_duration
-        self.instrument = instrument
-        super(InstrumentGrid, self).__init__(len(self.scale), num_columns)
+        super(NoteGrid, self).__init__(len(self.scale), num_columns)
 
-    @sampling.sampled
-    def render(self):
+    @property
+    def duration(self):
+        return len(self.cells) * self.beat_duration
+
+    @property
+    def sheet(self):
         notes = []
         for pitch, row in zip(reversed(self.scale), self.value):
             for x, value in enumerate(row):
                 if value:
                     t = x * self.beat_duration
-                    try:
-                        sound = self.instrument(pitch, t=t)
-                    except TypeError:
-                        sound = self.instrument(pitch)
-                    notes.append((t, sound))
-        return sampling.merge(notes)
-
-    @sampling.sampled
-    def display(self, **kwargs):
-        return audio.Audio(self.render(), **kwargs)
+                    notes.append(note.Note(pitch, self.beat_duration, t))
+        return note.Sheet(notes, duration=self.duration)

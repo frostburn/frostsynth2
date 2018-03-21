@@ -28,6 +28,13 @@ class Instrument(object):
             samples.append((note.time, self.play(note)))
         return merge(samples)
 
+    @sampled
+    def play_sheet(self, sheet):
+        samples = []
+        for note in sheet:
+            samples.append((note.time, self.play(note)))
+        return merge(samples)
+
 
 class SawBass(Instrument):
     def __init__(self):
