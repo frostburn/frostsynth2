@@ -50,8 +50,8 @@ class Note(object):
 
 
 class Sheet(object):
-    def __init__(self, notes, duration=None):
-        self.notes = notes
+    def __init__(self, notes=None, duration=None):
+        self.notes = [] if notes is None else notes
         self._duration = duration
 
     def __iter__(self):
@@ -83,8 +83,12 @@ class Sheet(object):
             return self.off_time
         return self._duration
 
+    @duration.setter
+    def duration(self, value):
+        self._duration = value
+
     def copy(self):
-        return self.__class__([n.copy() for n in self.notes])
+        return self.__class__([n.copy() for n in self.notes], self._duration)
 
     def shift(self, duration):
         for note in self.notes:
@@ -95,3 +99,6 @@ class Sheet(object):
         for note in self.notes:
             note.pitch += interval
         return self
+
+    def append(self, note):
+        self.notes.append(note)

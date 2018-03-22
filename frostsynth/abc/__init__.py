@@ -3,7 +3,7 @@ from fractions import Fraction
 import re
 
 from .key import PITCHES
-from ..note import Note
+from ..note import Note, Sheet
 
 
 class Bar(object):
@@ -89,7 +89,7 @@ HEADER_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in HEADER_SPECS)
 NOTE_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in NOTE_SPECS)
 
 
-def score_to_notes(score, as_floats=True):
+def score_to_sheet(score):
     unit_length = Fraction(1)
     tempo_multiplier = Fraction(1)
     key = "C"
@@ -109,11 +109,12 @@ def score_to_notes(score, as_floats=True):
         elif kind == "BODY":
             pitches = PITCHES[key]
             tempo_multiplier *= unit_length
-            for note in score_body_to_notes(score[mo.start():], pitches, as_floats):
+            sheet = Sheet()
+            for note in score_body_to_notes(score[mo.start():], pitches, as_floats=True):
                 note.duration *= tempo_multiplier
                 note.time *= tempo_multiplier
-                yield note
-            return
+                sheet.append(note)
+            return sheet
 
 
 def score_body_to_notes(score, pitches, as_floats=True):
