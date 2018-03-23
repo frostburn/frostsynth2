@@ -1,7 +1,10 @@
+from __future__ import division
+
 import numpy as np
 import ipywidgets as widgets
 
 from .. import note
+from ..sampling import merge, sampled
 
 
 class ToggleGrid(object):
@@ -46,15 +49,35 @@ class ToggleGrid(object):
         return self.el._ipython_display_()
 
 
-class NoteGrid(ToggleGrid):
-    def __init__(self, num_columns, beat_duration, scale):
-        self.scale = scale
-        self.beat_duration = beat_duration
-        super(NoteGrid, self).__init__(len(self.scale), num_columns)
+class TempoGrid(ToggleGrid):
+    def __init__(self, *args, **kwargs):
+        super(TempoGrid, self).__init__(*args, **kwargs)
+        grid = self.el
+        self.tempo = widgets.FloatText(
+            description="Tempo",
+            value=120,
+        )
+        self.el = widgets.VBox([
+            self.tempo,
+            grid,
+        ])
 
     @property
     def duration(self):
-        return len(self.cells) * self.beat_duration
+        return len(self.cells) * 60 / self.tempo.value
+
+    def time(self, index):
+        return index * 60 / self.tempo.value
+
+
+class NoteGrid(TempoGrid):
+    def __init__(self, num_columns, scale):
+        self.scale = scale
+        super(NoteGrid, self).__init__(len(self.scale), num_columns)
+
+    @property
+    def beat_duration(self):
+        return 60 / self.tempo.value
 
     @property
     def sheet(self):
@@ -62,6 +85,29 @@ class NoteGrid(ToggleGrid):
         for pitch, row in zip(reversed(self.scale), self.value):
             for x, value in enumerate(row):
                 if value:
-                    t = x * self.beat_duration
+                    t = self.time(x)
                     notes.append(note.Note(pitch, self.beat_duration, t))
         return note.Sheet(notes, duration=self.duration)
+
+
+class CallableGrid(TempoGrid):
+    def __init__(self, num_columns, callables):
+        self.callables = callables
+        super(CallableGrid, self).__init__(len(self.callables), num_columns)
+
+
+    @sampled
+    def _play(self):
+        samples = []
+        for call, row in zip(self.callables, self.value):
+            for x, value in enumerate(row):
+                if value:
+                    samples.append((self.time(x), call()))
+        return merge(samples)
+
+    @sampled
+    def play(self, repeats=1):
+        samples = []
+        for i in range(repeats):
+            samples.append((i * self.duration, self._play()))
+        return merge(samples)
