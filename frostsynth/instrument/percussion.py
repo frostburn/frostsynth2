@@ -19,6 +19,10 @@ class Percussion(Instrument):
         note = note or NonPitched()
         return Audio(self.play(note))
 
+    @sampled
+    def __call__(self):
+        return self.play(NonPitched())
+
 
 class Kick(Percussion):
     def __init__(self):
@@ -42,6 +46,10 @@ class Kick(Percussion):
             description="distortion",
             value=1, min=0.5, max=5, step=0.5
         )
+        self.noise = widgets.FloatSlider(
+            description="noise",
+            value=1.5, min=0, max=5, step=0.5
+        )
         self.el = widgets.VBox([
             widgets.Label("Kick drum"),
             self.frequency,
@@ -49,6 +57,7 @@ class Kick(Percussion):
             self.meekness,
             self.decay,
             self.distortion,
+            self.noise,
         ])
 
     @sampled
@@ -59,9 +68,10 @@ class Kick(Percussion):
         meekness = self.meekness.value
         decay = self.decay.value
         distortion = self.distortion.value * note.velocity
+        n = noise.brownian(0.5) * self.noise.value
         return np.tanh(
-            sine(np.log(attack * t + meekness) * freq) * np.exp(-t * decay) * distortion
-        ) * 0.5 * (np.tanh(1000 * t - 2) + 1)  * note.velocity
+            (n + sine(np.log(attack * t + meekness) * freq)) * np.exp(-t * decay) * distortion
+        ) / np.tanh(distortion) * 0.5 * (np.tanh(1000 * t - 2) + 1)  * note.velocity
 
 class Snare(Percussion):
     modes = [
@@ -91,7 +101,7 @@ class Snare(Percussion):
         )
         self.noise_volume = widgets.FloatSlider(
             description="noise volume",
-            value=1, min=0.1, max=2, step=0.1
+            value=5, min=0, max=10, step=0.5
         )
         self.noise_decay = widgets.FloatSlider(
             description="noise decay",
@@ -119,6 +129,6 @@ class Snare(Percussion):
             modes.append((f * detune, w, d * decay))
         modal = sinepings(duration, modes) / norm
         distortion = self.distortion.value
-        modal = np.tanh(modal * note.velocity * distortion) / distortion
+        modal = np.tanh(modal * note.velocity * distortion) / np.tanh(distortion)
         noisy = noise.pink(duration) * np.exp(-t * self.noise_decay.value) * 0.01 * self.noise_volume.value
-        return (modal + noisy) * note.velocity
+        return 0.5 * (modal + noisy) * note.velocity
