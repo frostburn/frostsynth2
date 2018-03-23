@@ -13,7 +13,7 @@ def test_score_to_notes():
     K:C
     _A, B =c/2 ^d'/
     """
-    notes = set(abc.score_to_notes(score, as_floats=False))
+    notes = set(abc.score_to_sheet(score, as_floats=False).notes)
     assert (
         notes ==
         set([
@@ -34,7 +34,7 @@ def test_key_signature():
     K:D
     D E F =F C =C
     """
-    notes = set(abc.score_to_notes(score, as_floats=False))
+    notes = set(abc.score_to_sheet(score, as_floats=False).notes)
     assert (
         notes ==
         set([
@@ -58,7 +58,7 @@ def test_repeat():
     K:Gm
     A B C :| D E F |]
     """
-    notes = set(abc.score_to_notes(score, as_floats=False))
+    notes = set(abc.score_to_sheet(score, as_floats=False).notes)
     assert (
         notes ==
         set([
@@ -85,7 +85,7 @@ def test_first_repeat():
     K:BMin
     C |[1 D :|[2 E |]
     """
-    notes = set(abc.score_to_notes(score, as_floats=False))
+    notes = set(abc.score_to_sheet(score, as_floats=False).notes)
     assert (
         notes ==
         set([

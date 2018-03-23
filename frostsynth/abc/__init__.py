@@ -89,7 +89,7 @@ HEADER_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in HEADER_SPECS)
 NOTE_REGEX = '|'.join('(?P<{}>{})'.format(*pair) for pair in NOTE_SPECS)
 
 
-def score_to_sheet(score):
+def score_to_sheet(score, as_floats=True):
     unit_length = Fraction(1)
     tempo_multiplier = Fraction(1)
     key = "C"
@@ -110,7 +110,7 @@ def score_to_sheet(score):
             pitches = PITCHES[key]
             tempo_multiplier *= unit_length
             sheet = Sheet()
-            for note in score_body_to_notes(score[mo.start():], pitches, as_floats=True):
+            for note in score_body_to_notes(score[mo.start():], pitches, as_floats=as_floats):
                 note.duration *= tempo_multiplier
                 note.time *= tempo_multiplier
                 sheet.append(note)
