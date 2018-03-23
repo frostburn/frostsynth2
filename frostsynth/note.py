@@ -31,14 +31,20 @@ class Note(object):
 
     @property
     def freq(self):
+        if self.pitch is None:
+            return None
         return mtof(self.pitch)
 
     @freq.setter
     def freq(self, value):
+        if value is None:
+            self.pitch = None
         self.pitch = ftom(value)
 
     @property
     def off_time(self):
+        if self.duration in None:
+            return self.time
         return self.time + self.duration
 
     @sampled
@@ -47,6 +53,13 @@ class Note(object):
 
     def copy(self):
         return self.__class__(self.pitch, self.duration, self.time, self.velocity)
+
+
+class NonPitched(Note):
+    def __init__(self, time=None, velocity=0.75):
+        super(NonPitched, self).__init__(pitch=None, duration=None, time=time, velocity=velocity)
+
+    # TODO: repr and copy
 
 
 class Sheet(object):
