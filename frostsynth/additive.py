@@ -3,6 +3,7 @@ from __future__ import division
 from numbers import Number
 
 import numpy as np
+from scipy.interpolate import CubicSpline
 
 from .sampling import sampled, trange, integrate, get_sample_rate
 from . import tau
@@ -29,11 +30,23 @@ def sinepings(duration, params):
     return sum(w * np.sin(tau * f * t) * np.exp(-t * d) for f, w, d in params)
 
 
+def make_periodic(samples):
+    phase = np.arange(len(samples) + 1) / len(samples)
+    samples = np.concatenate((samples, [samples[0]]))
+    return CubicSpline(phase, samples, bc_type="periodic")
+
+
+def fourier(weights):
+    samples = np.fft.irfft(weights) * len(weights)
+    return make_periodic(samples)
+
+
 def make_pad(f, num_harmonics, oversampling):
     freq = np.arange((num_harmonics + 1) * oversampling) / oversampling
     density = f(freq)
     if not np.iscomplexobj(freq):
         density = density * (np.random.randn(len(density)) + 1j * np.random.randn(len(density)))
     samples = np.fft.irfft(density) * len(density)
-    phase = np.arange(len(samples)) * oversampling / len(samples)
-    return lambda p: np.interp(p, phase, samples, period=oversampling)
+    phase = np.arange(len(samples) + 1) * oversampling / len(samples)
+    samples = np.concatenate((samples, [samples[0]]))
+    return CubicSpline(phase, samples, bc_type="periodic")
