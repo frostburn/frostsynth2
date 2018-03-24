@@ -5,8 +5,8 @@ from numbers import Number
 import numpy as np
 from scipy.interpolate import CubicSpline
 
-from .sampling import sampled, trange, integrate, get_sample_rate
-from . import tau
+from ..sampling import sampled, trange, integrate, get_sample_rate
+from .. import tau
 
 
 @sampled
