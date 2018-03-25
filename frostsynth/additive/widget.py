@@ -72,3 +72,44 @@ class SplineSlider(object):
     def freeze(self):
         samples = [slider.value for slider in self.sliders]
         return make_periodic(samples)
+
+
+class OvertoneSlider(object):
+    def __init__(self, overtones, basis=lambda p: np.sin(tau * p)):
+        if isinstance(overtones, int):
+            overtones = [1 << i for i in range(overtones)]
+        self.overtones = tuple(overtones)
+        self.basis = basis
+        self.sliders = []
+        for overtone in self.overtones:
+            self.sliders.append(widgets.FloatSlider(
+                description="#{}".format(overtone),
+                value=0, min=0, max=1, step=0.01,
+                orientation="vertical"
+            ))
+        self.offsets = np.zeros(len(overtones))
+        self.randomizer = widgets.Button(
+            description="Randomize phase"
+        )
+        self.randomizer.on_click(lambda args: self.randomize_phase())
+
+        self.el = widgets.VBox([
+            widgets.Label("Overtones"),
+            widgets.HBox(self.sliders),
+            self.randomizer,
+        ])
+
+    def _ipython_display_(self):
+        return self.el._ipython_display_()
+
+    def __call__(self, phase):
+        partials = []
+        for overtone, slider, offset in zip(self.overtones, self.sliders, self.offsets):
+            weight = slider.value
+            partials.append(
+                weight * self.basis(overtone * phase + offset)
+            )
+        return sum(partials)
+
+    def randomize_phase(self):
+        self.offsets = np.random.rand(len(self.offsets))
