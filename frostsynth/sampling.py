@@ -3,7 +3,11 @@ from __future__ import division
 from functools import wraps
 
 import numpy as np
-from scipy.io import wavfile
+import scipy.signal
+import scipy.io.wavfile
+
+from . import chunk
+from . import window
 
 SAMPLE_RATE = None
 
@@ -35,7 +39,7 @@ def get_sample_rate(default=None):
 
 
 def read_and_set_sample_rate(filename):
-    rate, data = wavfile.read(filename)
+    rate, data = scipy.io.wavfile.read(filename)
     set_sample_rate(rate)
     info = np.iinfo(data.dtype)
     data = data.astype(float) / max(abs(info.min), abs(info.max))
@@ -48,7 +52,7 @@ def read_and_set_sample_rate(filename):
 def write(filename, data):
     if data.dtype == float:
         data = (data * (0.99 * 2.0 ** 15)).astype("int16")
-    wavfile.write(filename, SAMPLE_RATE, data)
+    scipy.io.wavfile.write(filename, SAMPLE_RATE, data)
 
 
 @sampled
@@ -115,3 +119,13 @@ def merge(args):
 @sampled
 def add(*samples):
     return amerge([(0, sample) for sample in samples])
+
+
+def resample_slow(signal, factor):
+    return scipy.signal.resample(signal, int(round(len(signal) * factor)))
+
+
+def resample(signal, factor, window_size=1260, overlap=4):
+    chunks = chunk.chunkify(signal, window.cosine(window_size), overlap)
+    chunks = [resample_slow(c, factor) for c in chunks]
+    return chunk.dechunkify(chunks, overlap)
