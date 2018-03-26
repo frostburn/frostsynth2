@@ -28,14 +28,14 @@ class Delay(Filter):
         return np.array(result)
 
     @sampled
-    def step(self, y):
+    def step(self, sample):
         delta = self.duration * get_sample_rate()
-        z0 = int(delta)
-        mu = delta - z0
-        self.samples.append(y)
-        y0 = self[z0]
-        y1 = self[z0 + 1]
-        return y0 + mu * (y1 - y0)
+        index = int(delta)
+        mu = delta - index
+        self.samples.append(sample)
+        xn = self[index]
+        xn1 = self[index + 1]
+        return xn + mu * (xn1 - xn)
 
     def __getitem__(self, index):
         if index >= len(self.samples) or index < 0:
@@ -71,6 +71,59 @@ class Comb(Delay):
         return np.array(result)
 
     @sampled
-    def step(self, y):
-        self.last = super(Comb, self).step(y + self.last * self.alpha)
+    def step(self, sample):
+        self.last = super(Comb, self).step(sample - self.last * self.alpha)
         return self.last
+
+
+class Schroeder(Filter):
+    def __init__(self, duration=None, alpha=None):
+        self.duration = duration
+        self.alpha = alpha
+        self.reset()
+
+    def reset(self):
+        self.samples = []
+        self.outputs = []
+
+    @sampled
+    def map(self, data, duration=None, alpha=None):
+        self.reset()
+        result = []
+        if duration is None:
+            duration = self.duration
+        if isinstance(duration, Number):
+            duration = np.full_like(data, duration)
+        if alpha is None:
+            alpha = self.alpha
+        if isinstance(alpha, Number):
+            alpha = np.full_like(data, alpha)
+        for y, d, a in zip(data, duration, alpha):
+            self.duration = d
+            self.alpha = a
+            result.append(self.step(y))
+        return np.array(result)
+
+    @sampled
+    def step(self, sample):
+        delta = self.duration * get_sample_rate()
+        index = int(delta)
+        mu = delta - index
+        self.samples.append(sample)
+        xn = self.get_sample(index)
+        xn1 = self.get_sample(index + 1)
+        yn = self.get_output(index + 1)
+        yn1 = self.get_output(index + 2)
+        y = self.alpha * (sample - yn - mu * (yn1 - yn)) + xn + mu * (xn1 - xn)
+        self.outputs.append(y)
+        return y
+
+    def get_sample(self, index):
+        if index >= len(self.samples) or index < 0:
+            return 0.0
+        return self.samples[-index]
+
+    def get_output(self, index):
+        if index >= len(self.outputs) or index < 0:
+            return 0.0
+        return self.outputs[-index]
