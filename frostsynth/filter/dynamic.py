@@ -80,3 +80,33 @@ class Allpass(Dynamic):
         self.two_zero.b0 = (r * r + i * i) * m
         self.two_zero.b1 = 2 * r * m
         self.two_zero.b2 = m
+
+
+@sampled
+def lowpass(signal, freq, decay):
+    lpf = Lowpass()
+    return lpf.map(signal, freq, decay)
+
+
+@sampled
+def highpass(signal, freq, decay):
+    hpf = Highpass()
+    return hpf.map(signal, freq, decay)
+
+
+@sampled
+def bandpass(signal, freq, decay):
+    bpf = Bandpass()
+    return bpf.map(signal, freq, decay)
+
+
+@sampled
+def notch(signal, freq, decay):
+    n = Notch()
+    return n.map(signal, freq, decay)
+
+
+@sampled
+def allpass(signal, freq, decay):
+    apf = Allpass()
+    return apf.map(signal, freq, decay)

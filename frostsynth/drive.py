@@ -1,7 +1,14 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-from .sampling import sampled
+from .sampling import sampled, get_sample_rate, trange
+
+
+@sampled
+def lin_driver(fp, duration):
+    xp = np.linspace(0, duration, len(fp))
+    return np.interp(trange(duration), xp, fp)
+
 
 def sheet_to_pitch(sheet, attack):
     """

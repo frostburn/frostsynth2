@@ -134,3 +134,8 @@ def resample(signal, factor, window_size=1260, overlap=4):
 @sampled
 def get_dc(signal):
     return np.array(signal).sum() / SAMPLE_RATE
+
+
+@sampled
+def dur(signal):
+    return len(signal) / SAMPLE_RATE

@@ -9,3 +9,7 @@ def sine(phase):
 
 def cosine(phase):
     return np.cos(tau * phase)
+
+
+def cis(phase):
+    return np.exp(2j * np.pi * phase)
