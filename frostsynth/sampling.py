@@ -75,6 +75,11 @@ def time_like(a):
 
 
 @sampled
+def tfull(duration, value):
+    return np.full(int(round(duration * SAMPLE_RATE)), value)
+
+
+@sampled
 def shift(samples, duration, interpolation=None):
     duration = int(round(duration * SAMPLE_RATE))
     if duration > 0:
