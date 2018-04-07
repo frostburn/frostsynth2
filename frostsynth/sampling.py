@@ -129,3 +129,8 @@ def resample(signal, factor, window_size=1260, overlap=4):
     chunks = chunk.chunkify(signal, window.cosine(window_size), overlap)
     chunks = [resample_slow(c, factor) for c in chunks]
     return chunk.dechunkify(chunks, overlap)
+
+
+@sampled
+def get_dc(signal):
+    return np.array(signal).sum() / SAMPLE_RATE
