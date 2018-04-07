@@ -1,6 +1,6 @@
 import numpy as np
 
-from .sampling import sampled, get_sample_rate
+from .sampling import sampled, get_sample_rate, integrate, time_like
 
 
 def acolored(length, color):
@@ -49,3 +49,19 @@ def brownian(duration):
     """
     rate = get_sample_rate()
     return np.cumsum(np.random.randn(int(round(duration * rate))) * rate ** -0.5)
+
+
+@sampled
+def uniform(duration):
+    rate = get_sample_rate()
+    return np.random.rand(int(round(duration * rate))) * 2 - 1
+
+
+@sampled
+def linsnow(frequency, variation=0.25):
+    phase = integrate(frequency)
+    total_samples = int(np.ceil(phase[-1]))
+    xp = np.arange(total_samples, dtype=float)
+    xp += variation * (np.random.rand(total_samples) - np.random.rand(total_samples))
+    fp = np.random.rand(total_samples) * 2 - 1
+    return np.interp(phase, xp, fp)
