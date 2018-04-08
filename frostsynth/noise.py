@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 from .sampling import sampled, get_sample_rate, integrate, time_like
@@ -58,10 +60,18 @@ def uniform(duration):
 
 
 @sampled
-def linsnow(frequency, variation=0.25):
+def linsnow(frequency, variation=0.5):
+    if variation < 0:
+        raise ValueError("Lattice variation must be positive")
+    elif variation >= 1:
+        raise ValueError("Lattice variation too large")
     phase = integrate(frequency)
     total_samples = int(np.ceil(phase[-1]))
-    xp = np.arange(total_samples, dtype=float)
-    xp += variation * (np.random.rand(total_samples) - np.random.rand(total_samples))
+    total_samples *= 2  # Some extra buffer due to indeterminancy
+    delta = np.ones(total_samples)
+    delta += variation * (np.random.rand(total_samples) - np.random.rand(total_samples))
+    xp = delta.cumsum()
+    if xp[-1] < phase[-1]:
+        warnings.warn("Ran out of samples. Snow tail will suffer.")
     fp = np.random.rand(total_samples) * 2 - 1
     return np.interp(phase, xp, fp)
