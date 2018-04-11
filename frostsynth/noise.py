@@ -1,6 +1,9 @@
+from __future__ import division
+
 import warnings
 
 import numpy as np
+from scipy.interpolate import interp1d
 
 from .sampling import sampled, get_sample_rate, integrate, time_like, trange
 
@@ -71,10 +74,48 @@ def linsnow(frequency, variation=0.5, duration=None):
         phase = trange(duration) * frequency
     total_samples = int(np.ceil(phase[-1]))
     total_samples *= 2  # Some extra buffer due to indeterminancy
-    delta = np.ones(total_samples)
-    delta += variation * (np.random.rand(total_samples) - np.random.rand(total_samples))
-    xp = delta.cumsum()
+    delta = np.ones(total_samples - 1)
+    delta += variation * (
+        np.random.rand(total_samples - 1) -
+        np.random.rand(total_samples - 1)
+    )
+    xp = np.concatenate(([0], delta.cumsum()))
     if xp[-1] < phase[-1]:
         warnings.warn("Ran out of samples. Snow tail will suffer.")
     fp = np.random.rand(total_samples) * 2 - 1
     return np.interp(phase, xp, fp)
+
+
+def interpsnow(num_samples, variation=0.5, kind="cubic"):
+    if variation < 0:
+        raise ValueError("Lattice variation must be positive")
+    elif variation >= 1:
+        raise ValueError("Lattice variation too large")
+    delta = np.ones(num_samples - 1)
+    delta += variation * (
+        np.random.rand(num_samples - 1) -
+        np.random.rand(num_samples - 1)
+    )
+    xp = np.concatenate(([0], delta.cumsum()))
+    fp = np.random.rand(num_samples) * 2 - 1
+    return interp1d(
+        xp, fp,
+        kind=kind,
+        copy=False,
+        bounds_error=False,
+        fill_value="extrapolate",
+        assume_sorted=True
+    )
+
+
+@sampled
+def lowpassed(frequency, duration):
+    basis = 4 / frequency
+    x = trange(-basis, basis)
+    x *= frequency
+    kernel = np.exp(-x**2)
+    kernel /= np.sqrt(kernel.sum())
+    rate = get_sample_rate()
+    length = int(round(duration * rate))
+    signal = np.random.randn(length + len(kernel))
+    return np.convolve(signal, kernel, mode="valid")[:length]
