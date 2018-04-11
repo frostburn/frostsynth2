@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from .sampling import sampled, get_sample_rate, integrate, time_like
+from .sampling import sampled, get_sample_rate, integrate, time_like, trange
 
 
 def acolored(length, color):
@@ -60,12 +60,15 @@ def uniform(duration):
 
 
 @sampled
-def linsnow(frequency, variation=0.5):
+def linsnow(frequency, variation=0.5, duration=None):
     if variation < 0:
         raise ValueError("Lattice variation must be positive")
     elif variation >= 1:
         raise ValueError("Lattice variation too large")
-    phase = integrate(frequency)
+    if duration is None:
+        phase = integrate(frequency)
+    else:
+        phase = trange(duration) * frequency
     total_samples = int(np.ceil(phase[-1]))
     total_samples *= 2  # Some extra buffer due to indeterminancy
     delta = np.ones(total_samples)

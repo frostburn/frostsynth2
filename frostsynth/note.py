@@ -43,7 +43,7 @@ class Note(object):
 
     @property
     def off_time(self):
-        if self.duration in None:
+        if self.duration is None:
             return self.time
         return self.time + self.duration
 
@@ -66,6 +66,9 @@ class Sheet(object):
     def __init__(self, notes=None, duration=None):
         self.notes = [] if notes is None else notes
         self._duration = duration
+
+    def __repr__(self):
+        return "{}({!r}, duration={!r})".format(self.__class__.__name__, self.notes, self.duration)
 
     def __iter__(self):
         return iter(self.notes)
@@ -111,6 +114,14 @@ class Sheet(object):
     def transpose(self, interval):
         for note in self.notes:
             note.pitch += interval
+        return self
+
+    def dilate(self, amount):
+        for note in self.notes:
+            note.duration *= amount
+            note.time *= amount
+        if self. _duration is not None:
+            self._duration *= amount
         return self
 
     def append(self, note):
