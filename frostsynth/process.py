@@ -1,16 +1,16 @@
+from __future__ import division
 import numpy as np
 
 from . import tau
 from . import analysis
 from . import chunk
 from . import window
-from .sampling import sampled, differentiate, integrate
+from .sampling import sampled, differentiate, integrate, get_sample_rate
 from .pitch import ftom, mtof
 from .scale import scale_round
 
 
-@sampled
-def decompose_frequency(data, window_size=1024):
+def decompose_phase(data, window_size=1024):
     w = window.pad(window.cosine(window_size), window_size // 2)
     chunks = chunk.chunkify(data, window=w, overlap=4)
 
@@ -19,9 +19,46 @@ def decompose_frequency(data, window_size=1024):
     data = 4 * chunk.dechunkify(chunks, overlap=4)
 
     phase = np.unwrap(np.angle(data)) / tau
-    frequency = differentiate(phase)
     amplitude = abs(data)
 
+    return phase, amplitude
+
+
+def steps_since_one(phase):
+    """
+    Find the number of steps since last rotation.
+    """
+    result = []
+    step = 0
+    for i, x in enumerate(phase):
+        while phase[step] + 1 < x:
+            step += 1
+        if step == 0:
+            result.append(float("inf"))
+        else:
+            prev = x - phase[step - 1] - 1
+            cur = x - phase[step] - 1
+            mu = prev / (prev - cur)
+            result.append(i - (step - 1 + mu))
+    return np.array(result, dtype=float)
+
+
+@sampled
+def decompose_period(data, window_size=1024):
+    phase, amplitude = decompose_phase(data, window_size)
+    period = steps_since_one(phase) / get_sample_rate()
+    # Fill out unknown periods
+    for x in period:
+        if x != float("inf"):
+            period[period == float("inf")] = x
+            break
+    return period, amplitude
+
+
+@sampled
+def decompose_frequency(data, window_size=1024):
+    phase, amplitude = decompose_phase(data, window_size)
+    frequency = differentiate(phase)
     return frequency, amplitude
 
 
