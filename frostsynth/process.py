@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+from scipy.interpolate import interp1d
 
 from . import tau
 from . import analysis
@@ -10,13 +11,17 @@ from .pitch import ftom, mtof
 from .scale import scale_round
 
 
-def decompose_phase(data, window_size=1024):
+def fast_hilbert(data, window_size=1024):
     w = window.pad(window.cosine(window_size), window_size // 2)
     chunks = chunk.chunkify(data, window=w, overlap=4)
 
     chunks = map(analysis.hilbert, chunks)
 
-    data = 4 * chunk.dechunkify(chunks, overlap=4)
+    return 4 * chunk.dechunkify(chunks, overlap=4)
+
+
+def decompose_phase(data, window_size=1024):
+    data = fast_hilbert(data, window_size=window_size)
 
     phase = np.unwrap(np.angle(data)) / tau
     amplitude = abs(data)
@@ -46,13 +51,18 @@ def steps_since_one(phase):
 @sampled
 def decompose_period(data, window_size=1024):
     phase, amplitude = decompose_phase(data, window_size)
-    period = steps_since_one(phase) / get_sample_rate()
+    period = steps_since_one(phase)
     # Fill out unknown periods
     for x in period:
         if x != float("inf"):
             period[period == float("inf")] = x
             break
-    return period, amplitude
+    # Average energy over period
+    cumulative_energy = np.cumsum(amplitude ** 2)
+    x = np.arange(len(period), dtype=float)
+    f = interp1d(x, cumulative_energy, fill_value="extrapolate", bounds_error=False)
+    energy = (f(x + 0.5 * period) - f(x - 0.5 * period)) / period
+    return period / get_sample_rate(), np.sqrt(energy)
 
 
 @sampled
