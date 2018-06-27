@@ -74,7 +74,7 @@ PITCHES = {
 
 for key, pitches in PITCHES.items():
     pitches.update(PITCHES_BASE)
-    for note, pitch in pitches.items():
+    for note, pitch in list(pitches.items()):
         pitches[note.lower()] = pitch + 12
 
 for pitches in PITCHES.values():

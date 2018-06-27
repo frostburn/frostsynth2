@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy as np
-from matplotlib.pyplot import imshow, xticks, yticks
+# from matplotlib.pyplot import imshow, xticks, yticks
 
 from .chunk import chunkify, dechunkify
 from .sampling import sampled, get_sample_rate, dur
@@ -19,31 +19,31 @@ def spectrogram(signal, window, overlap):
     return np.array(map(np.fft.rfft, chunkify(signal, window, overlap, ljust=True))).T
 
 
-@sampled
-def pltspec(signal, freq_max=None):
-    window_size = 2048
-    overlap = 32
-    ratio = 1
-    if freq_max is not None:
-        ratio = 2 * freq_max / get_sample_rate()
-        window_size = int(window_size / ratio)
-        overlap = int(overlap / ratio)
-    x = np.arange(window_size) / window_size * 8 - 4
-    window = np.exp(-x*x)
-    spec = abs(spectrogram(signal, window, overlap))
-    height, width = spec.shape
-    if freq_max is not None:
-        f_limit = int(round(height * ratio))
-        spec = spec[:f_limit]
-        height, width = spec.shape
-    else:
-        freq_max = 0.5 * get_sample_rate()
-    imshow(
-        spec,
-        origin="lower",
-    )
-    xticks(np.linspace(0, width - 1, 5), np.linspace(0, dur(signal), 5))
-    yticks(np.linspace(0, height - 1, 5), np.linspace(0, freq_max, 5))
+# @sampled
+# def pltspec(signal, freq_max=None):
+#     window_size = 2048
+#     overlap = 32
+#     ratio = 1
+#     if freq_max is not None:
+#         ratio = 2 * freq_max / get_sample_rate()
+#         window_size = int(window_size / ratio)
+#         overlap = int(overlap / ratio)
+#     x = np.arange(window_size) / window_size * 8 - 4
+#     window = np.exp(-x*x)
+#     spec = abs(spectrogram(signal, window, overlap))
+#     height, width = spec.shape
+#     if freq_max is not None:
+#         f_limit = int(round(height * ratio))
+#         spec = spec[:f_limit]
+#         height, width = spec.shape
+#     else:
+#         freq_max = 0.5 * get_sample_rate()
+#     imshow(
+#         spec,
+#         origin="lower",
+#     )
+#     xticks(np.linspace(0, width - 1, 5), np.linspace(0, dur(signal), 5))
+#     yticks(np.linspace(0, height - 1, 5), np.linspace(0, freq_max, 5))
 
 
 @sampled
