@@ -5,6 +5,7 @@ from functools import wraps
 import numpy as np
 import scipy.signal
 import scipy.io.wavfile
+import scipy.interpolate
 
 from . import chunk
 from . import window
@@ -144,6 +145,17 @@ def resample(signal, factor, window_size=1260, overlap=4):
     chunks = chunk.chunkify(signal, window.cosine(window_size), overlap)
     chunks = [resample_slow(c, factor) for c in chunks]
     return chunk.dechunkify(chunks, overlap)
+
+
+@sampled
+def tinterp(signal, kind="linear"):
+    return scipy.interpolate.interp1d(
+        time_like(signal),
+        signal,
+        fill_value="extrapolate",
+        bounds_error=False,
+        kind=kind,
+    )
 
 
 @sampled
