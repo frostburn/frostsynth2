@@ -1,4 +1,5 @@
-from IPython.display import Audio as IAudio
+import ipywidgets as widgets
+from IPython.display import Audio as IAudio, display
 
 from ..sampling import get_sample_rate
 
@@ -59,3 +60,23 @@ class Audio(IAudio):
         waveobj.close()
 
         return val
+
+
+class EvalAudio(object):
+    def __init__(self, ipython_globals):
+        self.ipython_globals = ipython_globals
+        self.code_input = widgets.Text()
+        self.render_button = widgets.Button(description="Evaluate")
+        def evaluate(element):
+            display(Audio(eval(
+                self.code_input.value, self.ipython_globals
+            )))
+        self.code_input.on_submit(evaluate)
+        self.render_button.on_click(evaluate)
+        self.el = widgets.VBox([
+            self.code_input,
+            self.render_button,
+        ])
+
+    def _ipython_display_(self):
+        return self.el._ipython_display_()
