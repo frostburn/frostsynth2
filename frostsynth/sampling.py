@@ -50,6 +50,11 @@ def read_and_set_sample_rate(filename):
 
 
 @sampled
+def dur(data):
+    return int(round(len(data) * SAMPLE_RATE))
+
+
+@sampled
 def write(filename, data):
     if not isinstance(data, np.ndarray):
         data = np.array(data, dtype=float)
