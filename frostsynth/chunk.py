@@ -16,6 +16,7 @@ def chunkify(data, window, overlap, ljust=False):
 
 
 def dechunkify(chunks, overlap):
+    chunks = list(chunks)
     size = len(chunks[0])
     delta = size // overlap
     components = []
