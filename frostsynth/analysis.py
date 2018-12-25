@@ -4,7 +4,7 @@ import numpy as np
 # from matplotlib.pyplot import imshow, xticks, yticks
 
 from .chunk import chunkify, dechunkify
-from .sampling import sampled, get_sample_rate, dur
+from .sampling import sampled, get_sample_rate, dur, time_like
 
 def hilbert(signal):
     frequencies = np.fft.fft(signal)
@@ -59,3 +59,23 @@ def spectral_multiply(signal, f, window_size=8192, overlap=64):
         chunks.append(np.fft.irfft(spectrum))
         t += dt
     return dechunkify(chunks, overlap)
+
+
+@sampled
+def spectral_envelope(signal, f):
+    """
+    f(time, freq) -> envelope for sinusoid at `freq`.
+    """
+    t = time_like(signal)
+    phase = np.arange(len(signal), dtype=float) / len(signal) * 2 * np.pi
+    result = np.zeros_like(signal)
+    a = 1.0 / len(signal)
+    dw = get_sample_rate() * a
+    # XXX: We could go for rfft to save a few CPU cycles, but it requires special attention at DC and nyquist (if it exists).
+    for i, z in enumerate(np.fft.fft(signal)):
+        # XXX: There's probably a way to get all of the carriers at once with some FFT trick.
+        carrier = (z * np.exp(1j * i * phase)).real * a
+        if 2*i > len(signal):
+            i = len(signal) - i
+        result += carrier * f(t, i * dw)
+    return result
